@@ -1,2 +1,2 @@
-# DisisentGen
+# DisisentGen (DiGen)
 simple password generator
