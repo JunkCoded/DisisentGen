@@ -5,7 +5,7 @@ def generate(lenght, numbers=False, letters=False, spsimbols=False, count=1):
     if (numbers == False) and (letters == False) and (spsimbols == False):
         return('no arguments')
     #проверка того правильно ли введены данные
-    if (count < 1) or (lenght < 1) or ('int' not in str(type(count))) or ('int' not in str(type(lenght))):
+    if (count < 1) or (lenght < 1) or (not isinstance(count, int)) or (not isinstance(lenght, int)):
         return('wrong argument')
     res = ''
     symbols = ''
