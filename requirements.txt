@@ -1,0 +1,16 @@
+altgraph==0.17.4
+certifi==2023.11.17
+charset-normalizer==3.3.2
+dearpygui==1.10.1
+docopt==0.6.2
+idna==3.6
+packaging==23.2
+pefile==2023.2.7
+pyinstaller==6.3.0
+pyinstaller-hooks-contrib==2024.0
+pyperclip==1.8.2
+pywin32-ctypes==0.2.2
+requests==2.31.0
+setuptools==69.0.3
+urllib3==2.1.0
+yarg==0.1.9
