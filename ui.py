@@ -67,7 +67,7 @@ def update_custom_charset():
     dpg.set_value('custom_charset', all_charset)
 
 
-def filter_custom_charset(): # костыль из за https://github.com/hoffstadt/DearPyGui/issues/643
+def filter_custom_charset():  # костыль из-за https://github.com/hoffstadt/DearPyGui/issues/643
     new_str = dpg.get_value('custom_charset')
     stripped = "".join(dict.fromkeys(new_str))
     if stripped != new_str:
@@ -82,8 +82,8 @@ with dpg.item_handler_registry(tag='custom_charset_handler') as handler:
 def custom_charset_callback(_, new_str):
     _updated = False
 
-    for group_chars in definition_charset:
-        for char in definition_charset[group_chars]: # check each char, because don't care about permutation
+    for group_chars in definition_charset:  # update checkboxes if manually removed/added their chars
+        for char in definition_charset[group_chars]:  # check each char, because don't care about permutation
             if new_str.find(char) == -1:
                 dpg.set_value(group_chars, False)
                 _updated = True
@@ -98,8 +98,9 @@ def custom_charset_callback(_, new_str):
         pass
         # TODO: there we DONT use custom charset
 
+
 with dpg.window(label='DisisentGen', tag='main'):
-    dpg.add_input_text(tag='password', label="Password", password=True)
+    dpg.add_input_text(tag='password', label="Password", hint='Generated password will be here', password=True)
     dpg.add_input_text(tag='password_showed', label="Password", source='password', show=False)
 
     with dpg.group(horizontal=True):
@@ -114,9 +115,12 @@ with dpg.window(label='DisisentGen', tag='main'):
 
     with dpg.collapsing_header(label="Extra settings"):
         with dpg.group(horizontal=True):
-            dpg.add_checkbox(tag='punctuation', label="!?:;.,\"", default_value=special_charset['punctuation'], callback=switch_special_charset)
-            dpg.add_checkbox(tag='mathChars', label="%*+=-/", default_value=special_charset['mathChars'], callback=switch_special_charset)
-            dpg.add_checkbox(tag='otherChars', label="@#$^&()_№|<>", default_value=special_charset['otherChars'], callback=switch_special_charset)
+            dpg.add_checkbox(tag='punctuation', label="!?:;.,\"", default_value=special_charset['punctuation'],
+                             callback=switch_special_charset)
+            dpg.add_checkbox(tag='mathChars', label="%*+=-/", default_value=special_charset['mathChars'],
+                             callback=switch_special_charset)
+            dpg.add_checkbox(tag='otherChars', label="@#$^&()_№|<>", default_value=special_charset['otherChars'],
+                             callback=switch_special_charset)
 
         dpg.add_input_text(tag='custom_charset', label='Custom charset',
                            hint='Enter a charset or use the checkboxes',
