@@ -1,11 +1,24 @@
 from random import choice, shuffle
 
+def _template_gen(length, charset, equal_count, template, default_template_key):
+    password_for_template = _gen(length, charset, equal_count)
+    res = ''
+    j = 0
+    for template_key in template:
+        if template_key == default_template_key:
+            res += password_for_template[j]
+            j += 1
+        else:
+            res += template_key
+    return res
+
 #функция, отвечающая за то, чтобы рандомизировать порядок символов в строке
 def _remake(unsorted_password):
     char_list = list(unsorted_password)
     shuffle(char_list)
     unsorted_password = ''.join(char_list)
     return unsorted_password
+
 #функция, необходимая для генерации пароля (на вход мы получаем длинну пароля, массив символов из которых состоит пароль и переменную, от которой зависит будет ли количество этих символов равно или нет)
 def _gen(length, symbols, equal_count):
     if len(symbols) == 1: #если переменная equal_count была передана случайно, то мы убираем ее для оптимизации
@@ -29,13 +42,19 @@ def _gen(length, symbols, equal_count):
         return res
 
 
-def generate(length, numbers=True, lower_letters=True, upper_letters=True, schars=True, equal_count=False, user_chars='', count=1):
+def generate(length, numbers=True, lower_letters=True, upper_letters=True, schars=True, equal_count=False, user_chars='', default_template_key='x', template='', count=1):
     #проверка на то есть ли у нас символы из которых можно составить пароль
     if not (numbers or lower_letters or upper_letters or schars) and (user_chars == ''):
         return('no arguments')
     #проверка того правильно ли введены данные
     if (count < 1) or (length < 1) or (not isinstance(count, int)) or (not isinstance(length, int)):
         return('wrong argument')
+    if (template != ''):
+        if (default_template_key not in template):
+            return('wrong template')
+        template_key_count = template.count(default_template_key)
+        if (template_key_count != length):
+            length = template_key_count
     charset = []
     #создаем массив из которого потом будем брать символы для пароля
     if numbers:
@@ -50,10 +69,18 @@ def generate(length, numbers=True, lower_letters=True, upper_letters=True, schar
         charset.append(user_chars)
     #если нам необходимо сделать одну генерацию
     if count == 1:
-        return _gen(length, charset, equal_count)
+        if template == '':
+            return _gen(length, charset, equal_count)
+        else:
+            return _template_gen(length, charset, equal_count, template, default_template_key)
     #если необходимо сделать больше, чем одну генерацию
     elif count > 1:
         res_m = []
-        for j in range(count):
-            res_m.append(_gen(length, charset, equal_count))
-        return res_m
+        if template == '':
+            for j in range(count):
+                res_m.append(_gen(length, charset, equal_count))
+            return res_m
+        else:
+            for j in range(count):
+                res_m.append(_template_gen(length, charset, equal_count, template, default_template_key))
+            return res_m
