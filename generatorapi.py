@@ -29,7 +29,7 @@ def _gen(length, symbols, equal_count):
         return res
 
 
-def generate(length, numbers=False, lower_letters=False, upper_letters=False, schars=False, equal_count=False, user_chars='', count=1):
+def generate(length, numbers=True, lower_letters=True, upper_letters=True, schars=True, equal_count=False, user_chars='', count=1):
     #проверка на то есть ли у нас символы из которых можно составить пароль
     if not (numbers or lower_letters or upper_letters or schars) and (user_chars == ''):
         return('no arguments')
