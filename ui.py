@@ -2,8 +2,12 @@ from generatorapi import generate
 import dearpygui.dearpygui as dpg
 import pyperclip
 import easygui
+import gettext
 
 w, h = 600, 350
+
+languages = ['English', 'Русский']
+default_lang = 'English'
 
 using_custom_charset = False
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
@@ -119,7 +123,9 @@ def _generate_callback():
         lower_letters=charset['lowerletters'],
         upper_letters=charset['upperletters'],
         schars=charset['chars'],
-        user_chars=dpg.get_value('custom_charset') if using_custom_charset else ''
+        user_chars=dpg.get_value('custom_charset') if using_custom_charset else '',
+        template=dpg.get_value('formatting_str') if dpg.get_value('formatting_enable') else '',
+        default_template_key=dpg.get_value('formatting_letter') if dpg.get_value('formatting_enable') else ''
     )
 
     dpg.set_value('password', generated)
@@ -175,11 +181,11 @@ def _update_using_custom_charset(from_callback=False):
                 if group_chars in special_charset: special_charset[group_chars] = True
 
 with dpg.window(label='DisisentGen', tag='main'):
-    lang = dpg.add_combo(label='Language', items=['English', 'Русский'], width=100)
-
-    dpg.add_input_text(tag='password', label="Password", hint='Generated password will be here', password=True)
-    dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here',
-                       source='password', show=False)
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(tag='password', label="Password", hint='Generated password will be here', password=True)
+        dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here',
+                           source='password', show=False)
+        # lang = dpg.add_combo(items=['English', 'Русский'], default_value=default_lang, width=115)
 
     with dpg.group(horizontal=True):
         dpg.add_slider_int(tag='length', label='Length', default_value=32, min_value=1, max_value=128)
@@ -233,9 +239,9 @@ with dpg.window(label='DisisentGen', tag='main'):
         dpg.add_spacer()
         dpg.add_text(default_value='Formatting')
         with dpg.group(horizontal=True):
-            dpg.add_checkbox()
-            dpg.add_input_text(default_value='XXXX-XXXX')
-            dpg.add_input_text(default_value='X', no_spaces=True, width=17)
+            dpg.add_checkbox(tag='formatting_enable')
+            dpg.add_input_text(tag='formatting_str', default_value='XXXX-XXXX')
+            dpg.add_input_text(tag='formatting_letter', default_value='X', no_spaces=True, width=17)
             _help('Checkbox: To enable formatting, this disable length parameter\n'
                   'Center input: Your formatting string\n'
                   'Last box: The letter that needs to be replaced')
