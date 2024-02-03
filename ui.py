@@ -5,7 +5,6 @@ import easygui
 
 w, h = 600, 300
 
-
 using_custom_charset = False
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
 special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
@@ -13,7 +12,6 @@ definition_charset = {
     'lowerletters': 'qwertyuiopasdfghjklzxcvbnm', 'upperletters': 'QWERTYUIOPASDFGHJKLZXCVBNM',
     'numbers': '0123456789', 'punctuation': '!?:;.,\"', 'mathChars': '%*+=-/', 'otherChars': '@#$^&()_№|<>'
 }
-
 
 dpg.create_context()
 dpg.create_viewport(title='DisisentGen', width=w, height=h)
@@ -69,23 +67,20 @@ def _copy_password():
 def _switch_charset(charset_type, new_bool):
     charset[charset_type] = new_bool
 
-    if charset_type == 'chars' and not new_bool:
+    if charset_type == 'chars':
         for i in special_charset:
-            special_charset[i] = False
-            dpg.set_value(i, False)
-            dpg.disable_item(i)
-    elif charset_type == 'chars' and new_bool:
-        for i in special_charset:
-            special_charset[i] = True
-            dpg.set_value(i, True)
-            dpg.enable_item(i)
+            dpg.set_value(i, new_bool)
+            special_charset[i] = new_bool
+            dpg.enable_item(i) if new_bool else dpg.disable_item(i)
 
     _update_custom_charset()
+    _update_using_custom_charset()
 
 
 def _switch_special_charset(charset_type, new_bool):
     special_charset[charset_type] = new_bool
     _update_custom_charset()
+    _update_using_custom_charset()
 
 
 def _update_custom_charset():
@@ -133,25 +128,39 @@ with dpg.item_handler_registry(tag='custom_charset_handler') as handler:
     dpg.add_item_deactivated_after_edit_handler(callback=_filter_custom_charset)
 
 
-def _custom_charset_callback(_, new_str):
+def _custom_charset_callback():
+    _update_using_custom_charset(True)
+
+
+def _update_using_custom_charset(from_callback=False):
     global using_custom_charset
     using_custom_charset = False
 
     for group_chars in definition_charset:  # update checkboxes if manually removed/added their chars
+        if charset['chars'] and (group_chars in special_charset) and (not special_charset[group_chars]):
+            using_custom_charset = True
+            if not from_callback: break
+
+        if not from_callback: continue
+
         for char in definition_charset[group_chars]:  # check each char, because don't care about permutation
-            if new_str.find(char) == -1:
-                dpg.set_value(group_chars, False)
+            if (group_chars in charset and not charset[group_chars]) or (
+                    group_chars in special_charset and not special_charset[group_chars]):
+                break
+
+            if dpg.get_value('custom_charset').find(char) == -1:
+                if from_callback: dpg.set_value(group_chars, False)
                 using_custom_charset = True
                 break
         else:
-            dpg.set_value(group_chars, True)
-
+            if from_callback: dpg.set_value(group_chars, True)
 
 with dpg.window(label='DisisentGen', tag='main'):
     lang = dpg.add_combo(label='Language', items=['English', 'Русский'], width=100)
 
     dpg.add_input_text(tag='password', label="Password", hint='Generated password will be here', password=True)
-    dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here', source='password', show=False)
+    dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here',
+                       source='password', show=False)
 
     with dpg.group(horizontal=True):
         dpg.add_slider_int(tag='length', label='Length', default_value=32, min_value=1, max_value=128)
@@ -177,8 +186,10 @@ with dpg.window(label='DisisentGen', tag='main'):
         dpg.add_button(tag='copy', label='Copy', callback=_copy_password)
 
     with dpg.group(horizontal=True):
-        dpg.add_checkbox(tag='lowerletters', label='Lower letters', default_value=charset['lowerletters'], callback=_switch_charset)
-        dpg.add_checkbox(tag='upperletters', label='Upper letters', default_value=charset['upperletters'], callback=_switch_charset)
+        dpg.add_checkbox(tag='lowerletters', label='Lower letters', default_value=charset['lowerletters'],
+                         callback=_switch_charset)
+        dpg.add_checkbox(tag='upperletters', label='Upper letters', default_value=charset['upperletters'],
+                         callback=_switch_charset)
         dpg.add_checkbox(tag='numbers', label='Numbers', default_value=charset['numbers'], callback=_switch_charset)
         dpg.add_checkbox(tag='chars', label='Special characters', default_value=charset['chars'],
                          callback=_switch_charset)
