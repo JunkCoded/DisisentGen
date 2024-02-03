@@ -1,3 +1,4 @@
+from generatorapi import generate
 import dearpygui.dearpygui as dpg
 import pyperclip
 import easygui
@@ -5,6 +6,7 @@ import easygui
 w, h = 600, 300
 
 
+using_custom_charset = False
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
 special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
 definition_charset = {
@@ -101,6 +103,24 @@ def _update_custom_charset():
     dpg.set_value('custom_charset', all_charset)
 
 
+def _select_folder():
+    path = easygui.diropenbox()
+    dpg.set_item_label('select_folder', path)
+
+
+def _generate_callback():
+    generated = generate(
+        length=dpg.get_value('length'),
+        numbers=charset['numbers'],
+        lower_letters=charset['lowerletters'],
+        upper_letters=charset['upperletters'],
+        schars=charset['chars'],
+        user_chars=dpg.get_value('custom_charset') if using_custom_charset else ''
+    )
+
+    dpg.set_value('password', generated)
+
+
 def _filter_custom_charset():  # костыль из-за https://github.com/hoffstadt/DearPyGui/issues/643
     new_str = dpg.get_value('custom_charset')
     stripped = "".join(dict.fromkeys(new_str))
@@ -109,33 +129,22 @@ def _filter_custom_charset():  # костыль из-за https://github.com/hof
         return
 
 
-def _select_folder():
-    path = easygui.diropenbox()
-    dpg.set_item_label('select_folder', path)
-
-
 with dpg.item_handler_registry(tag='custom_charset_handler') as handler:
     dpg.add_item_deactivated_after_edit_handler(callback=_filter_custom_charset)
 
 
 def _custom_charset_callback(_, new_str):
-    _updated = False
+    global using_custom_charset
+    using_custom_charset = False
 
     for group_chars in definition_charset:  # update checkboxes if manually removed/added their chars
         for char in definition_charset[group_chars]:  # check each char, because don't care about permutation
             if new_str.find(char) == -1:
                 dpg.set_value(group_chars, False)
-                _updated = True
+                using_custom_charset = True
                 break
         else:
             dpg.set_value(group_chars, True)
-
-    if _updated:
-        pass
-        # TODO: there we use custom charset
-    else:
-        pass
-        # TODO: there we DONT use custom charset
 
 
 with dpg.window(label='DisisentGen', tag='main'):
@@ -145,13 +154,12 @@ with dpg.window(label='DisisentGen', tag='main'):
     dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here', source='password', show=False)
 
     with dpg.group(horizontal=True):
-        dpg.add_slider_int(tag='length', label='Length', min_value=1, max_value=128, default_value=1)
+        dpg.add_slider_int(tag='length', label='Length', default_value=32, min_value=1, max_value=128)
         _help('Ctrl + LMB to manual edit')
 
     with dpg.group(horizontal=True):
-        dpg.add_button(tag='toggle_show', label='Show', callback=_toggle_show_callback)
-        dpg.add_button(tag='copy', label='Copy', callback=_copy_password)
-        dpg.add_button(label='Generate')
+        dpg.add_button(label='Generate', callback=_generate_callback)
+
         dpg.add_button(label="Multiple Generate")
         with dpg.popup(dpg.last_item(), modal=True, mousebutton=dpg.mvMouseButton_Left, tag="multiplegenerate_modal"):
             dpg.add_text('You need to select the folder where the file will be created passwords.txt')
@@ -164,6 +172,9 @@ with dpg.window(label='DisisentGen', tag='main'):
                 dpg.add_button(label="Generate", width=75, callback=lambda: dpg.hide_item('multiplegenerate_modal'))
                 dpg.add_button(label="Cancel", width=75,
                                callback=lambda: dpg.hide_item('multiplegenerate_modal'))
+
+        dpg.add_button(tag='toggle_show', label='Show', callback=_toggle_show_callback)
+        dpg.add_button(tag='copy', label='Copy', callback=_copy_password)
 
     with dpg.group(horizontal=True):
         dpg.add_checkbox(tag='lowerletters', label='Lower letters', default_value=charset['lowerletters'], callback=_switch_charset)
