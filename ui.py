@@ -1,13 +1,11 @@
-import os
-import sys
-
 from generatorapi import generate
 import dearpygui.dearpygui as dpg
 import pyperclip
 import easygui
-import gettext
+import sys
+import os
 
-w, h = 600, 350
+w, h = 600, 330
 
 languages = ['English', 'Русский']
 default_lang = 'English'
