@@ -1,36 +1,70 @@
 import dearpygui.dearpygui as dpg
 import pyperclip
+import easygui
 
 w, h = 600, 300
+
+
+charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
+special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
+definition_charset = {
+    'lowerletters': 'qwertyuiopasdfghjklzxcvbnm', 'upperletters': 'QWERTYUIOPASDFGHJKLZXCVBNM',
+    'numbers': '0123456789', 'punctuation': '!?:;.,\"', 'mathChars': '%*+=-/', 'otherChars': '@#$^&()_№|<>'
+}
+
 
 dpg.create_context()
 dpg.create_viewport(title='DisisentGen', width=w, height=h)
 
+# cyrillic support
+big_let_start = 0x00C0  # Capital "A" in cyrillic alphabet
+big_let_end = 0x00DF  # Capital "Я" in cyrillic alphabet
+small_let_end = 0x00FF  # small "я" in cyrillic alphabet
+remap_big_let = 0x0410  # Starting number for remapped cyrillic alphabet
+alph_len = big_let_end - big_let_start + 1  # adds the shift from big letters to small
+alph_shift = remap_big_let - big_let_start  # adds the shift from remapped to non-remapped
+with dpg.font_registry():
+    with dpg.font("fonts/Roboto-Medium.ttf", 16) as default_font:
+        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
+        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+        biglet = remap_big_let  # Starting number for remapped cyrillic alphabet
+        for i1 in range(big_let_start, big_let_end + 1):  # Cycle through big letters in cyrillic alphabet
+            dpg.add_char_remap(i1, biglet)  # Remap the big cyrillic letter
+            dpg.add_char_remap(i1 + alph_len, biglet + alph_len)  # Remap the small cyrillic letter
+            biglet += 1  # choose next letter
+        dpg.bind_font(default_font)
 
-def toggle_show_password():
-    if dpg.is_item_visible('password_showed'):  # hide
-        dpg.hide_item('password_showed')
-        dpg.show_item('password')
-        dpg.set_item_label('toggle_show', 'Show')
-    else:  # show
+
+def _help(message):
+    last_item = dpg.last_item()
+    group = dpg.add_group(horizontal=True)
+    dpg.move_item(last_item, parent=group)
+    dpg.capture_next_item(lambda s: dpg.move_item(s, parent=group))
+    t = dpg.add_text("(?)", color=[0, 255, 0])
+    with dpg.tooltip(t):
+        dpg.add_text(message)
+
+
+def _toggle_show_callback():
+    toggle_show_password(not dpg.is_item_visible('password_showed'))
+
+
+def toggle_show_password(show):
+    if show:  # show
         dpg.hide_item('password')
         dpg.show_item('password_showed')
         dpg.set_item_label('toggle_show', 'Hide')
+    else:  # hide
+        dpg.hide_item('password_showed')
+        dpg.show_item('password')
+        dpg.set_item_label('toggle_show', 'Show')
 
 
-def copy_password():
+def _copy_password():
     pyperclip.copy(dpg.get_value('password'))
 
 
-charset = {'letters': True, 'numbers': True, 'chars': True}  # default charset values
-special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
-definition_charset = {
-    'letters': 'qwertyuiopasdfghjklzxcvbnm', 'numbers': '0123456789',
-    'punctuation': '!?:;.,\"', 'mathChars': '%*+=-/', 'otherChars': '@#$^&()_№|<>'
-}
-
-
-def switch_charset(charset_type, new_bool):
+def _switch_charset(charset_type, new_bool):
     charset[charset_type] = new_bool
 
     if charset_type == 'chars' and not new_bool:
@@ -44,15 +78,15 @@ def switch_charset(charset_type, new_bool):
             dpg.set_value(i, True)
             dpg.enable_item(i)
 
-    update_custom_charset()
+    _update_custom_charset()
 
 
-def switch_special_charset(charset_type, new_bool):
+def _switch_special_charset(charset_type, new_bool):
     special_charset[charset_type] = new_bool
-    update_custom_charset()
+    _update_custom_charset()
 
 
-def update_custom_charset():
+def _update_custom_charset():
     all_charset = ''
 
     for i in charset:
@@ -67,7 +101,7 @@ def update_custom_charset():
     dpg.set_value('custom_charset', all_charset)
 
 
-def filter_custom_charset():  # костыль из-за https://github.com/hoffstadt/DearPyGui/issues/643
+def _filter_custom_charset():  # костыль из-за https://github.com/hoffstadt/DearPyGui/issues/643
     new_str = dpg.get_value('custom_charset')
     stripped = "".join(dict.fromkeys(new_str))
     if stripped != new_str:
@@ -75,11 +109,16 @@ def filter_custom_charset():  # костыль из-за https://github.com/hoff
         return
 
 
+def _select_folder():
+    path = easygui.diropenbox()
+    dpg.set_item_label('select_folder', path)
+
+
 with dpg.item_handler_registry(tag='custom_charset_handler') as handler:
-    dpg.add_item_deactivated_after_edit_handler(callback=filter_custom_charset)
+    dpg.add_item_deactivated_after_edit_handler(callback=_filter_custom_charset)
 
 
-def custom_charset_callback(_, new_str):
+def _custom_charset_callback(_, new_str):
     _updated = False
 
     for group_chars in definition_charset:  # update checkboxes if manually removed/added their chars
@@ -100,34 +139,67 @@ def custom_charset_callback(_, new_str):
 
 
 with dpg.window(label='DisisentGen', tag='main'):
+    lang = dpg.add_combo(label='Language', items=['English', 'Русский'], width=100)
+
     dpg.add_input_text(tag='password', label="Password", hint='Generated password will be here', password=True)
-    dpg.add_input_text(tag='password_showed', label="Password", source='password', show=False)
+    dpg.add_input_text(tag='password_showed', label="Password", hint='Generated password will be here', source='password', show=False)
 
     with dpg.group(horizontal=True):
-        dpg.add_button(tag='toggle_show', label='Show', callback=toggle_show_password)
-        dpg.add_button(tag='copy', label='Copy', callback=copy_password)
+        dpg.add_slider_int(tag='length', label='Length', min_value=1, max_value=128, default_value=1)
+        _help('Ctrl + LMB to manual edit')
 
     with dpg.group(horizontal=True):
-        dpg.add_checkbox(tag='letters', label='Letters', default_value=charset['letters'], callback=switch_charset)
-        dpg.add_checkbox(tag='numbers', label='Numbers', default_value=charset['numbers'], callback=switch_charset)
+        dpg.add_button(tag='toggle_show', label='Show', callback=_toggle_show_callback)
+        dpg.add_button(tag='copy', label='Copy', callback=_copy_password)
+        dpg.add_button(label='Generate')
+        dpg.add_button(label="Multiple Generate")
+        with dpg.popup(dpg.last_item(), modal=True, mousebutton=dpg.mvMouseButton_Left, tag="multiplegenerate_modal"):
+            dpg.add_text('You need to select the folder where the file will be created passwords.txt')
+            dpg.add_button(tag='select_folder', label="Select folder", callback=_select_folder)
+            dpg.add_spacer()
+            dpg.add_slider_int(label='Count', min_value=1, max_value=1024, default_value=1)
+            _help('Ctrl + LMB to manual edit')
+            dpg.add_spacer()
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Generate", width=75, callback=lambda: dpg.hide_item('multiplegenerate_modal'))
+                dpg.add_button(label="Cancel", width=75,
+                               callback=lambda: dpg.hide_item('multiplegenerate_modal'))
+
+    with dpg.group(horizontal=True):
+        dpg.add_checkbox(tag='lowerletters', label='Lower letters', default_value=charset['lowerletters'], callback=_switch_charset)
+        dpg.add_checkbox(tag='upperletters', label='Upper letters', default_value=charset['upperletters'], callback=_switch_charset)
+        dpg.add_checkbox(tag='numbers', label='Numbers', default_value=charset['numbers'], callback=_switch_charset)
         dpg.add_checkbox(tag='chars', label='Special characters', default_value=charset['chars'],
-                         callback=switch_charset)
+                         callback=_switch_charset)
 
     with dpg.collapsing_header(label="Extra settings"):
         with dpg.group(horizontal=True):
             dpg.add_checkbox(tag='punctuation', label="!?:;.,\"", default_value=special_charset['punctuation'],
-                             callback=switch_special_charset)
+                             callback=_switch_special_charset)
             dpg.add_checkbox(tag='mathChars', label="%*+=-/", default_value=special_charset['mathChars'],
-                             callback=switch_special_charset)
+                             callback=_switch_special_charset)
             dpg.add_checkbox(tag='otherChars', label="@#$^&()_№|<>", default_value=special_charset['otherChars'],
-                             callback=switch_special_charset)
+                             callback=_switch_special_charset)
 
         dpg.add_input_text(tag='custom_charset', label='Custom charset',
                            hint='Enter a charset or use the checkboxes',
-                           no_spaces=True, callback=custom_charset_callback)
+                           no_spaces=True, callback=_custom_charset_callback)
         dpg.bind_item_handler_registry('custom_charset', "custom_charset_handler")
 
-update_custom_charset()
+        dpg.add_spacer()
+        dpg.add_combo(items=['Basic', 'Equally probable'], label='Generation types', width=150, default_value='Basic')
+
+        dpg.add_spacer()
+        dpg.add_text(default_value='Formatting')
+        with dpg.group(horizontal=True):
+            dpg.add_checkbox()
+            dpg.add_input_text(default_value='XXXX-XXXX')
+            dpg.add_input_text(default_value='X', no_spaces=True, width=17)
+            _help('Checkbox: To enable formatting, this disable length parameter\n'
+                  'Center input: Your formatting string\n'
+                  'Last box: The letter that needs to be replaced')
+
+_update_custom_charset()
 
 dpg.set_primary_window('main', True)
 dpg.setup_dearpygui()
