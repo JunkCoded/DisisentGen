@@ -1,3 +1,6 @@
+import os
+import sys
+
 from generatorapi import generate
 import dearpygui.dearpygui as dpg
 import pyperclip
@@ -21,6 +24,14 @@ dpg.create_context()
 dpg.create_viewport(title='DisisentGen', width=w, height=h)
 
 # cyrillic support
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 big_let_start = 0x00C0  # Capital "A" in cyrillic alphabet
 big_let_end = 0x00DF  # Capital "Я" in cyrillic alphabet
 small_let_end = 0x00FF  # small "я" in cyrillic alphabet
@@ -28,7 +39,7 @@ remap_big_let = 0x0410  # Starting number for remapped cyrillic alphabet
 alph_len = big_let_end - big_let_start + 1  # adds the shift from big letters to small
 alph_shift = remap_big_let - big_let_start  # adds the shift from remapped to non-remapped
 with dpg.font_registry():
-    with dpg.font("fonts/Roboto-Medium.ttf", 16) as default_font:
+    with dpg.font(resource_path("fonts/Roboto-Medium.ttf"), 16) as default_font:
         dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
         dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
         biglet = remap_big_let  # Starting number for remapped cyrillic alphabet
