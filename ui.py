@@ -3,7 +3,7 @@ import dearpygui.dearpygui as dpg
 import pyperclip
 import easygui
 
-w, h = 600, 300
+w, h = 600, 350
 
 using_custom_charset = False
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
@@ -73,29 +73,38 @@ def _switch_charset(charset_type, new_bool):
             special_charset[i] = new_bool
             dpg.enable_item(i) if new_bool else dpg.disable_item(i)
 
-    _update_custom_charset()
+    _update_custom_charset(charset_type, new_bool)
     _update_using_custom_charset()
 
 
 def _switch_special_charset(charset_type, new_bool):
     special_charset[charset_type] = new_bool
-    _update_custom_charset()
+    _update_custom_charset(charset_type, new_bool)
     _update_using_custom_charset()
 
 
-def _update_custom_charset():
+def _update_custom_charset(charset_type='letters', new_bool=True):
     all_charset = ''
 
-    for i in charset:
-        if i == 'chars': continue
-        if charset[i]:
-            all_charset += definition_charset[i]
+    if not using_custom_charset:
+        for i in charset:
+            if i == 'chars': continue
+            if charset[i]:
+                all_charset += definition_charset[i]
 
-    for i in special_charset:
-        if special_charset[i]:
-            all_charset += definition_charset[i]
+        for i in special_charset:
+            if special_charset[i]:
+                all_charset += definition_charset[i]
+    else:
+        all_charset = dpg.get_value('custom_charset')
+
+        if new_bool:
+            all_charset += definition_charset[charset_type]
+        else:
+            all_charset = all_charset.replace(definition_charset[charset_type], '')
 
     dpg.set_value('custom_charset', all_charset)
+    _filter_custom_charset()
 
 
 def _select_folder():
@@ -141,19 +150,29 @@ def _update_using_custom_charset(from_callback=False):
             using_custom_charset = True
             if not from_callback: break
 
-        if not from_callback: continue
-
+        before_not_found_char = False
+        found_char = False
         for char in definition_charset[group_chars]:  # check each char, because don't care about permutation
-            if (group_chars in charset and not charset[group_chars]) or (
-                    group_chars in special_charset and not special_charset[group_chars]):
-                break
-
             if dpg.get_value('custom_charset').find(char) == -1:
-                if from_callback: dpg.set_value(group_chars, False)
-                using_custom_charset = True
-                break
+                if from_callback:
+                    dpg.set_value(group_chars, False)
+                    if group_chars in charset: charset[group_chars] = False
+                    if group_chars in special_charset: special_charset[group_chars] = False
+
+                if found_char:
+                    using_custom_charset = True
+                    break
+                before_not_found_char = True
+            else:
+                if before_not_found_char:
+                    using_custom_charset = True
+                    break
+                found_char = True
         else:
-            if from_callback: dpg.set_value(group_chars, True)
+            if from_callback:
+                dpg.set_value(group_chars, True)
+                if group_chars in charset: charset[group_chars] = True
+                if group_chars in special_charset: special_charset[group_chars] = True
 
 with dpg.window(label='DisisentGen', tag='main'):
     lang = dpg.add_combo(label='Language', items=['English', 'Русский'], width=100)
