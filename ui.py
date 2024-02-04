@@ -11,6 +11,7 @@ languages = ['English', 'Русский']
 default_lang = 'English'
 
 using_custom_charset = False
+multiple_gen_path = None
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
 special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
 definition_charset = {
@@ -122,7 +123,30 @@ def _update_custom_charset(charset_type='letters', new_bool=True):
 
 def _select_folder():
     path = easygui.diropenbox()
+    global multiple_gen_path
+    multiple_gen_path = path
     dpg.set_item_label('select_folder', path)
+
+
+def _multiple_gen_callback():
+    if multiple_gen_path is None: return
+
+    dpg.hide_item('multiplegenerate_modal')
+
+    generated = generate(
+        length=dpg.get_value('length'),
+        numbers=charset['numbers'],
+        lower_letters=charset['lowerletters'],
+        upper_letters=charset['upperletters'],
+        schars=charset['chars'],
+        user_chars=dpg.get_value('custom_charset') if using_custom_charset else '',
+        template=dpg.get_value('formatting_str') if dpg.get_value('formatting_enable') else '',
+        default_template_key=dpg.get_value('formatting_letter') if dpg.get_value('formatting_enable') else '',
+        count=dpg.get_value('count'),
+    )
+
+    with open(multiple_gen_path + '\\generated-passwords.txt', 'w') as file:
+        file.write('\n'.join(generated))
 
 
 def _generate_callback():
@@ -205,14 +229,14 @@ with dpg.window(label='DisisentGen', tag='main'):
 
         dpg.add_button(label="Multiple Generate")
         with dpg.popup(dpg.last_item(), modal=True, mousebutton=dpg.mvMouseButton_Left, tag="multiplegenerate_modal"):
-            dpg.add_text('You need to select the folder where the file will be created passwords.txt')
+            dpg.add_text('You need to select the folder where the file will be created generated-passwords.txt')
             dpg.add_button(tag='select_folder', label="Select folder", callback=_select_folder)
             dpg.add_spacer()
-            dpg.add_slider_int(label='Count', min_value=1, max_value=1024, default_value=1)
+            dpg.add_slider_int(tag='count', label='Count', min_value=1, max_value=1024, default_value=1)
             _help('Ctrl + LMB to manual edit')
             dpg.add_spacer()
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Generate", width=75, callback=lambda: dpg.hide_item('multiplegenerate_modal'))
+                dpg.add_button(label="Generate", width=75, callback=_multiple_gen_callback)
                 dpg.add_button(label="Cancel", width=75,
                                callback=lambda: dpg.hide_item('multiplegenerate_modal'))
 
