@@ -11,13 +11,14 @@ languages = ['English', 'Русский']
 default_lang = 'English'
 
 using_custom_charset = False
-multiple_gen_path = None
+multiple_gen_path = ''
 charset = {'lowerletters': True, 'upperletters': True, 'numbers': True, 'chars': True}  # default charset values
 special_charset = {'punctuation': True, 'mathChars': True, 'otherChars': True}
 definition_charset = {
     'lowerletters': 'qwertyuiopasdfghjklzxcvbnm', 'upperletters': 'QWERTYUIOPASDFGHJKLZXCVBNM',
     'numbers': '0123456789', 'punctuation': '!?:;.,\"', 'mathChars': '%*+=-/', 'otherChars': '@#$^&()_№|<>'
 }
+generation_types = {'Basic': False, 'Equally probable': True}
 
 dpg.create_context()
 dpg.create_viewport(title='DisisentGen', width=w, height=h)
@@ -129,7 +130,7 @@ def _select_folder():
 
 
 def _multiple_gen_callback():
-    if multiple_gen_path is None: return
+    if multiple_gen_path == '': return
 
     dpg.hide_item('multiplegenerate_modal')
 
@@ -142,6 +143,7 @@ def _multiple_gen_callback():
         user_chars=dpg.get_value('custom_charset') if using_custom_charset else '',
         template=dpg.get_value('formatting_str') if dpg.get_value('formatting_enable') else '',
         default_template_key=dpg.get_value('formatting_letter') if dpg.get_value('formatting_enable') else '',
+        equal_count=generation_types[dpg.get_value('generation_type')],
         count=dpg.get_value('count'),
     )
 
@@ -158,7 +160,8 @@ def _generate_callback():
         schars=charset['chars'],
         user_chars=dpg.get_value('custom_charset') if using_custom_charset else '',
         template=dpg.get_value('formatting_str') if dpg.get_value('formatting_enable') else '',
-        default_template_key=dpg.get_value('formatting_letter') if dpg.get_value('formatting_enable') else ''
+        default_template_key=dpg.get_value('formatting_letter') if dpg.get_value('formatting_enable') else '',
+        equal_count=generation_types[dpg.get_value('generation_type')],
     )
 
     dpg.set_value('password', generated)
@@ -267,7 +270,7 @@ with dpg.window(label='DisisentGen', tag='main'):
         dpg.bind_item_handler_registry('custom_charset', "custom_charset_handler")
 
         dpg.add_spacer()
-        dpg.add_combo(items=['Basic', 'Equally probable'], label='Generation types', width=150, default_value='Basic')
+        dpg.add_combo(tag='generation_type', items=[i for i in generation_types.keys()], label='Generation types', width=150, default_value='Basic')
 
         dpg.add_spacer()
         dpg.add_text(default_value='Formatting')
