@@ -59,10 +59,13 @@ def generate(length, numbers=True, lower_letters=True, upper_letters=True, schar
     #создаем массив из которого потом будем брать символы для пароля
     if numbers:
         charset.append('1234567890')
-    if lower_letters:
-        charset.append('qwertyuiopasdfghjklzxcvbnm')
-    if upper_letters:
-        charset.append('QWERTYUIOPASDFGHJKLZXCVBNM')
+    if lower_letters or upper_letters:
+        letters_is_used = ''
+        if lower_letters:
+            letters_is_used += 'qwertyuiopasdfghjklzxcvbnm'
+        if upper_letters:
+            letters_is_used += 'QWERTYUIOPASDFGHJKLZXCVBNM'
+        charset.append(letters_is_used)
     if schars:
         charset.append('!@#$%^&*()_+=-?:;№".,/|<>')
     if user_chars != '':
